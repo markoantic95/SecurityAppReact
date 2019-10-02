@@ -7,6 +7,9 @@ import Link from '@material-ui/core/Link';
 import { login } from '../components/util/APIUtils';
 import { makeStyles } from '@material-ui/core/styles';
 import AccountCircle from '@material-ui/icons/AccountCircle';
+import { ValidatorForm, TextValidator } from 'react-material-ui-form-validator';
+import { withAlert } from 'react-alert';
+
 
 // const useStyles = makeStyles(theme => ({
 //     button: {
@@ -20,28 +23,36 @@ class Login extends Component {
     constructor(props) {
         super(props);
         this.state = {
-            usernameOrEmail: "",
-            password: ""
-            //     helperText: '',
-            //     error: false
+            formData: {
+                usernameOrEmail: "",
+                password: "",
+            }
+
         };
         this.handleChange = this.handleChange.bind(this);
     }
 
-    handleChange(event) {
-        const target = event.target;
-        const value = target.value;
-        const name = target.name;
+    // handleChange(event) {
+    //     const target = event.target;
+    //     const value = target.value;
+    //     const name = target.name;
 
-        this.setState({
-            [name]: value
-        });
+    //     this.setState({
+    //         [name]: value
+    //     });
+    // }
+    handleChange = (event) => {
+        const { formData } = this.state;
+        formData[event.target.name] = event.target.value;
+        this.setState({ formData });
     }
 
     handleLogin() {
-        const values = { usernameOrEmail: this.state.usernameOrEmail, password: this.state.password }
+        if(this.state.formData.usernameOrEmail==='' || this.state.formData.password===''){
+            return;
+        }
+        const values = { usernameOrEmail: this.state.formData.usernameOrEmail, password: this.state.formData.password }
         const loginRequest = Object.assign({}, values);
-        console.log("LOGIN " + JSON.stringify(loginRequest));
         login(loginRequest)
             .then(response => {
                 localStorage.setItem('accessToken', response.accessToken);
@@ -51,22 +62,16 @@ class Login extends Component {
             }).catch(error => {
                 if (error.status === 401) {
                     console.log("Your username or password is incorrect. Please try again!");
-                    // notification.error({
-                    //     message: 'Polling App',
-                    //     description: 'Your Username or Password is incorrect. Please try again!'
-                    // });
+                    this.props.alert.error(<div style={{ color: 'white' }}>Your Username or Password is incorrect. Please try again!</div>);
                 } else {
                     console.log("Sorry! Something went wrong. Please try again!");
-                    // notification.error({
-                    //     message: 'Polling App',
-                    //     description: error.message || 'Sorry! Something went wrong. Please try again!'
-                    // });
+                    this.props.alert.error(<div style={{ color: 'white' }}>Sorry! Something went wrong. Please try again!</div>);
                 }
             });
 
     }
 
-    handleRegister() {
+    goToRegister() {
         this.props.history.push({
             pathname: '/register',
         })
@@ -74,52 +79,59 @@ class Login extends Component {
 
     render() {
         return (
-            <div>
-                {/* <Grid container
-                    direction="column" justify="center"> */}
+            <ValidatorForm
+                ref="form"
+                onSubmit={this.handleLogin}
+            >
                 <Paper style={{ textAlign: 'center', width: '40%', marginLeft: '30%', marginTop: '2%' }} >
-                    <br />
                     <h2>Login</h2>
-                    <br/>
+                    <br />
                     {/* <AccountCircle/> */}
-                    <TextField
+
+                    <TextValidator
                         name="usernameOrEmail"
-                        required
                         label="Username/Email"
+                        value={this.state.formData.usernameOrEmail}
                         variant="outlined"
+                        validators={['required']}
+                        errorMessages={['Enter your username or email']}
                         onChange={this.handleChange}
                     />
                     <br />
                     <br />
-                    <TextField
-                        required
+                    <TextValidator
                         name="password"
                         type="password"
                         label="Password"
+                        value={this.state.formData.password}
                         variant="outlined"
+                        validators={['required']}
+                        errorMessages={['Enter your password']}
                         onChange={this.handleChange}
                     />
                     <br />
                     <br />
+
                 </Paper>
                 {/* </Grid> */}
                 <Grid container
                     direction="column" justify="center" alignItems="center"
                 >
                     <br />
-                    <Button variant="contained" color="primary" onClick={(event) => this.handleLogin(event)}>
+                    <Button variant="contained" type="submit" color="primary" onClick={(event) => this.handleLogin(event)}>
                         Login
-                </Button>
+                        </Button>
                     <br />
 
-                    <Link label="Register" primary={true} onClick={(event) => this.handleRegister(event)} >
+                    <Link label="Register" primary={true} onClick={(event) => this.goToRegister(event)} >
                         {"Not registered yet? Register now!"}
                     </Link>
                 </Grid>
-            </div>
-        )
+            </ValidatorForm>
+        );
 
     }
 }
 
-export default Login;
+// export default(Login);
+export default withAlert()(Login);
